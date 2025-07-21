@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type User struct {
 	gorm.Model
@@ -11,9 +15,10 @@ type User struct {
 
 type Service struct {
 	gorm.Model
-	Name    string
-	Cloud   string
-	UserID  uint
+	Name    string `json:"name"`
+	Cloud   string `json:"cloud"`
+	UserID  uint   `json:"user_id"`
+	Url     string `json:"url"`
 	Metrics []Metric
 	Logs    []Log
 	Alerts  []Alert
@@ -35,9 +40,18 @@ type Log struct {
 	Timestamp string
 }
 
+//	type Alert struct {
+//		gorm.Model
+//		ServiceID uint
+//		Message   string
+//		Active    bool
+//	}
 type Alert struct {
 	gorm.Model
-	ServiceID uint
-	Message   string
-	Active    bool
+	ServiceID uint      `json:"service_id"`
+	Message   string    `json:"message"`
+	Active    bool      `json:"active"`
+	Tipo      string    `json:"tipo"`      // Ej: "caida", "cpu", "ram", etc.
+	Severidad string    `json:"severidad"` // Ej: "baja", "media", "alta"
+	Fecha     time.Time `json:"fecha"`
 }

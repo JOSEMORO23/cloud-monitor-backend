@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/JOSEMORO23/cloud-monitor-backend/internal/models"
 	"github.com/JOSEMORO23/cloud-monitor-backend/pkg/db"
+	"github.com/gin-gonic/gin"
 )
 
 // Obtener todas las alertas
@@ -23,9 +23,12 @@ func GetAlerts(c *gin.Context) {
 func CreateAlert(c *gin.Context) {
 	var alert models.Alert
 	if err := c.ShouldBindJSON(&alert); err != nil {
+		// 🔍 Este print mostrará qué campo está fallando en el bind
+		println("Error al hacer el binding del JSON:", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
 	if err := db.DB.Create(&alert).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -45,21 +48,35 @@ func GetAlertByID(c *gin.Context) {
 }
 
 // Actualizar alerta
+// Actualizar alerta
 func UpdateAlert(c *gin.Context) {
 	id := c.Param("id")
-	var alert models.Alert
-	if err := db.DB.First(&alert, id).Error; err != nil {
+
+	var existingAlert models.Alert
+	if err := db.DB.First(&existingAlert, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Alert not found"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&alert); err != nil {
+	var input models.Alert
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	db.DB.Save(&alert)
-	c.JSON(http.StatusOK, alert)
+	// Actualizamos únicamente los campos relevantes
+	existingAlert.Message = input.Message
+	existingAlert.Active = input.Active
+	existingAlert.Tipo = input.Tipo
+	existingAlert.Severidad = input.Severidad
+	existingAlert.Fecha = input.Fecha
+
+	if err := db.DB.Save(&existingAlert).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingAlert)
 }
 
 // Eliminar alerta

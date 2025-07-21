@@ -22,14 +22,30 @@ func GetServices(c *gin.Context) {
 // 📌 Crear nuevo servicio
 func CreateService(c *gin.Context) {
 	var service models.Service
+
 	if err := c.ShouldBindJSON(&service); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Validar que user_id es mayor que cero
+	if service.UserID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id inválido"})
+		return
+	}
+
+	// Verificar que el usuario existe en la base de datos
+	var existingUser models.User
+	if err := db.DB.First(&existingUser, service.UserID).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Usuario no encontrado"})
+		return
+	}
+
 	if err := db.DB.Create(&service).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, service)
 }
 

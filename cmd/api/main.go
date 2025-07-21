@@ -5,8 +5,6 @@ import (
 
 	"github.com/JOSEMORO23/cloud-monitor-backend/internal/handlers"
 	"github.com/JOSEMORO23/cloud-monitor-backend/internal/middlewares"
-
-	//"github.com/JOSEMORO23/cloud-monitor-backend/pkg/cloud"
 	"github.com/JOSEMORO23/cloud-monitor-backend/pkg/db"
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +13,20 @@ func main() {
 	db.Connect()
 
 	r := gin.Default()
+
+	// 🔐 Middleware CORS - Agregado antes de cualquier ruta
+	r.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -42,6 +54,7 @@ func main() {
 		metrics.PUT("/:id", handlers.UpdateMetric)
 		metrics.DELETE("/:id", handlers.DeleteMetric)
 	}
+
 	// Users CRUD
 	r.GET("/users", handlers.GetUsers)
 	r.POST("/users", handlers.CreateUser)
@@ -49,7 +62,7 @@ func main() {
 	r.PUT("/users/:id", handlers.UpdateUser)
 	r.DELETE("/users/:id", handlers.DeleteUser)
 
-	// ✔️ Alerts CRUD protegido
+	// Alerts CRUD (protegido)
 	alerts := r.Group("/alerts")
 	alerts.Use(middlewares.AuthMiddleware())
 	{
@@ -60,7 +73,7 @@ func main() {
 		alerts.DELETE("/:id", handlers.DeleteAlert)
 	}
 
-	// ✔️ Logs CRUD protegido
+	// Logs CRUD (protegido)
 	logs := r.Group("/logs")
 	logs.Use(middlewares.AuthMiddleware())
 	{
@@ -70,17 +83,6 @@ func main() {
 		logs.PUT("/:id", handlers.UpdateLog)
 		logs.DELETE("/:id", handlers.DeleteLog)
 	}
-
-	// Solo para prueba, comenta si no lo quieres al iniciar siempre
-	//err := cloud.ListInstancesAWS()
-	//if err != nil {
-	//	log.Println("AWS Error:", err)
-	//}
-
-	//err = cloud.ListInstancesGCP("your-project-id", "us-central1-a", "path/to/credentials.json")
-	//if err != nil {
-	//	log.Println("GCP Error:", err)
-	//}
 
 	// Cloud Automation
 	cloudRoutes := r.Group("/cloud")
